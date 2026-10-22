@@ -10,29 +10,36 @@ local listeners = {}
 
 function M.on_change(fn) listeners[#listeners + 1] = fn end
 
+-- Labels stay short so they fit the tab; `help` (at most 160 bytes) carries the
+-- detail.
 local ROWS = {
-    {key = "enabled", label = "Grindstone and anvil", type = "toggle"},
-    {key = "reach_cm", label = "Reach (cm)", type = "number", min = 50, max = 400, step = 10},
-    {key = "wear_floor", label = "Wheel best result (% worn)", type = "number", min = 0, max = 100, step = 1, pct = true},
-    {key = "dirt_floor", label = "Wheel cleans to (% dirty)", type = "number", min = 0, max = 100, step = 1, pct = true},
-    {key = "anvil_wear_floor", label = "Anvil best result (% worn)", type = "number", min = 0, max = 100, step = 1, pct = true},
-    {key = "pass_wear", label = "Wear removed per pass (%)", type = "number", min = 1, max = 100, step = 1, pct = true},
-    {key = "ruined_wear", label = "Ruined at (% worn)", type = "number", min = 25, max = 100, step = 1, pct = true},
-    {key = "quality_matters", label = "Quality limits the edge", type = "toggle"},
-    {key = "anvil_needs_hammer", label = "Anvil needs a hammer", type = "toggle"},
-    {key = "anvil_needs_heat", label = "Anvil needs a lit forge", type = "toggle"},
-    {key = "anvil_armour", label = "Anvil mends metal armour", type = "toggle"},
-    {key = "whetstone", label = "Whetstone sharpens", type = "toggle"},
-    {key = "whetstone_wear_floor", label = "Whetstone best (% worn)", type = "number", min = 0, max = 100, step = 1, pct = true},
-    {key = "combat_wear", label = "Gear wears in fights", type = "toggle"},
-    {key = "edge_wear_per_hit", label = "Edge wear per hit", type = "number", min = 0, max = 4, step = 0.1},
-    {key = "blunt_wear_per_hit", label = "Blunt wear per hit", type = "number", min = 0, max = 4, step = 0.1},
-    {key = "armour_wear_per_blow", label = "Armour wear per blow", type = "number", min = 0, max = 4, step = 0.1},
-    {key = "shield_wear_per_block", label = "Shield wear per block", type = "number", min = 0, max = 4, step = 0.1},
-    {key = "edge_on_armour_factor", label = "Edge on armour: wear x", type = "number", min = 1, max = 5, step = 0.25},
-    {key = "unoiled_factor", label = "Unoiled repair: wear x", type = "number", min = 1, max = 6, step = 0.5},
-    {key = "quality_wear_effect", label = "Quality effect on wear", type = "number", min = 0, max = 1.5, step = 0.1},
-    {key = "corrode_wear_per_hour", label = "Blood rust per hour", type = "number", min = 0, max = 5, step = 0.25},
+    {type = "header", label = "Stations"},
+    {key = "enabled", label = "Repairs", type = "toggle", help = "Grindstones, anvils and whetstones can repair gear."},
+    {key = "reach_cm", label = "Reach", type = "number", min = 50, max = 400, step = 10, help = "How close you must stand to a station, in cm."},
+    {type = "header", label = "Limits"},
+    {key = "wear_floor", label = "Grindstone", type = "number", min = 0, max = 100, step = 1, pct = true, help = "Lowest wear a grindstone can bring an item to, % worn."},
+    {key = "dirt_floor", label = "Cleaning", type = "number", min = 0, max = 100, step = 1, pct = true, help = "Lowest dirt a grindstone can bring an item to, % dirty."},
+    {key = "anvil_wear_floor", label = "Anvil", type = "number", min = 0, max = 100, step = 1, pct = true, help = "Lowest wear an anvil can bring an item to, % worn."},
+    {key = "whetstone_wear_floor", label = "Whetstone", type = "number", min = 0, max = 100, step = 1, pct = true, help = "Lowest wear a whetstone can bring an edge to, % worn."},
+    {key = "pass_wear", label = "Per click", type = "number", min = 1, max = 100, step = 1, pct = true, help = "Most wear one click removes, %."},
+    {key = "ruined_wear", label = "Ruined at", type = "number", min = 25, max = 100, step = 1, pct = true, help = "From this much wear (%), only a Repair Sphere helps."},
+    {key = "quality_matters", label = "Quality cap", type = "toggle", help = "Poorly made steel can't be restored as far."},
+    {type = "header", label = "Anvil"},
+    {key = "anvil_needs_hammer", label = "Hammer", type = "toggle", help = "The anvil needs a blunt weapon in your pack."},
+    {key = "anvil_needs_heat", label = "Forge", type = "toggle", help = "Anvils next to a forge need it lit."},
+    {key = "anvil_armour", label = "Armour", type = "toggle", help = "The anvil mends mail and plate."},
+    {type = "header", label = "Whetstone"},
+    {key = "whetstone", label = "Whetstone", type = "toggle", help = "The Whetstone item can sharpen edges."},
+    {type = "header", label = "Combat wear"},
+    {key = "combat_wear", label = "Combat wear", type = "toggle", help = "Hits, blocks and blood rust wear down gear."},
+    {key = "edge_wear_per_hit", label = "Blades", type = "number", min = 0, max = 4, step = 0.1, help = "Wear per hit for that weapon type (0..255 scale)."},
+    {key = "blunt_wear_per_hit", label = "Blunt", type = "number", min = 0, max = 4, step = 0.1, help = "Wear per hit for that weapon type (0..255 scale)."},
+    {key = "armour_wear_per_blow", label = "Armour", type = "number", min = 0, max = 4, step = 0.1, help = "Wear per blow on the piece hit."},
+    {key = "shield_wear_per_block", label = "Shields", type = "number", min = 0, max = 4, step = 0.1, help = "Wear per blocked blow."},
+    {key = "edge_on_armour_factor", label = "On metal", type = "number", min = 1, max = 5, step = 0.25, help = "Extra blade wear when hitting armour, shields or parries (multiplier)."},
+    {key = "unoiled_factor", label = "Unoiled", type = "number", min = 1, max = 6, step = 0.5, help = "Extra wear until fresh work is oiled (multiplier)."},
+    {key = "quality_wear_effect", label = "Quality", type = "number", min = 0, max = 1.5, step = 0.1, help = "How much quality speeds up or slows wear."},
+    {key = "corrode_wear_per_hour", label = "Blood rust", type = "number", min = 0, max = 5, step = 0.25, help = "Wear per in-game hour on very dirty steel."},
 }
 
 local function to_game(row, value)
@@ -48,18 +55,25 @@ end
 
 if settings and settings.define and api.has_capability("ui.settings") then
     local by_key, defs = {}, {}
+    local plain = {}   -- the same rows without sub-headers, for a runtime before 0.28.0-r42
     for _, row in ipairs(ROWS) do
-        by_key[row.key] = row
-        local def = {key = row.key, label = row.label, type = row.type, default = to_setting(row, defaults[row.key])}
-        if row.type == "number" then
-            def.default = math.max(row.min, math.min(row.max, def.default))
-            def.min, def.max, def.step = row.min, row.max, row.step
+        if row.type == "header" then
+            defs[#defs + 1] = {type = "header", label = row.label}
+        else
+            by_key[row.key] = row
+            local def = {key = row.key, label = row.label, help = row.help, type = row.type,
+                default = to_setting(row, defaults[row.key])}
+            if row.type == "number" then
+                def.default = math.max(row.min, math.min(row.max, def.default))
+                def.min, def.max, def.step = row.min, row.max, row.step
+            end
+            defs[#defs + 1] = def
+            plain[#plain + 1] = def
         end
-        defs[#defs + 1] = def
     end
-    settings.define("Grindstone", defs)
+    if not pcall(settings.define, "Grindstone", defs) then settings.define("Grindstone", plain) end
     for _, row in ipairs(ROWS) do
-        local value = settings.get(row.key)
+        local value = row.key and settings.get(row.key)
         if value ~= nil then M[row.key] = to_game(row, value) end
     end
     events.on("settings.changed", function(event)

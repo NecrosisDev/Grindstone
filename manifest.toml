@@ -1,6 +1,7 @@
 [plugin]
 name = "Grindstone"
 version = "0.1.0"
+category = "Gameplay"
 
 [script]
 runtime = "com.necrosis.script-runtime"

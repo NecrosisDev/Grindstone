@@ -7,19 +7,22 @@ scripts/placements.lua and added by the runtime (levels.add_placement), so no
 level file is shipped. The database members are still replaced whole, so pass
 inputs that already contain other mods' objdb.rdb/objstrings.rdb to compose.
 
-    python -B mods/grindstone/assets.py --inputs <folder> --out <new folder>
+    python -B assets.py --inputs <folder> --out <new folder>
 
 Inputs: objdb.rdb, objstrings.rdb, exanima01.rfc, exanima03.rfc. Placements
-only appear in freshly generated levels."""
+only appear in freshly generated levels. The ExaniMate format library is found
+through EXANIMATE_TOOLS (its tools/exanimate folder); tools/make_dist.py sets it."""
 import argparse
 import math
+import os
 import shutil
 import struct
 import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parents[1] / 'tools' / 'exanimate'))
+if os.environ.get('EXANIMATE_TOOLS'):
+    sys.path.insert(0, os.environ['EXANIMATE_TOOLS'])
 from exanimate import level, rdb  # noqa: E402
 
 MOD_ID = 'com.necrosis.grindstone'
