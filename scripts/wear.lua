@@ -224,12 +224,17 @@ local function corrode()
 end
 
 -- Oil Flasks beside the forges, added by the runtime as the game reads each level
--- (fresh levels only). assets.py writes placements.lua with the built item ID.
+-- (fresh levels only). assets.py writes placements.lua with the built item ID and the
+-- spots for each known layout of a level (vanilla and Hellmode differ), keyed by the
+-- level file's size; a layout it does not know gets no flasks.
 local function place_oil()
-    if not (levels and levels.add_placement and api.has_capability("levels.serve")) then return end
+    if not (levels and levels.add_placement and levels.read and api.has_capability("levels.serve")) then return end
     local placements = require("placements")
-    for _, spot in ipairs(placements.oil) do
-        levels.add_placement(spot.level, placements.oil_item_id, {spot.x, spot.y, spot.z})
+    for member, layouts in pairs(placements.oil) do
+        local installed = levels.read(member, "Resource.rpk")
+        for _, spot in ipairs(installed and layouts[#installed] or {}) do
+            levels.add_placement(member, placements.oil_item_id, {spot.x, spot.y, spot.z})
+        end
     end
 end
 

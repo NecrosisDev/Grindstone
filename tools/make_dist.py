@@ -1,6 +1,7 @@
 """Builds the ready-to-ship mod into dist/mods/com.necrosis.grindstone from source.
 
-Reads the installed game's own Resource.rpk members, runs assets.py (Oil Flask
+Reads the installed game's own Resource.rpk members (plus vanilla levels 1 and 3 when the install keeps them, as
+Hellmode does in Resource.zip.001...), runs assets.py (Oil Flask
 record, Whetstone device, flask placements), then the Lua runtime's
 records_delta.py to cut that down to this mod's [script.records] range, and
 assembles manifest, scripts and records. Files already in the dist folder are
@@ -14,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +24,21 @@ ID_RANGE = ('0x591', '0x59f')
 STRING_RANGE = ('1217', '1248')
 INPUT_MEMBERS = ('objdb.rdb', 'objstrings.rdb', 'exanima01.rfc', 'exanima03.rfc')
 SOURCE_SCRIPTS = ('common.lua', 'config.lua', 'main.lua', 'options.lua', 'wear.lua')
+
+
+def vanilla_resource(game: Path, into: Path) -> Path | None:
+    """Hellmode installs keep the vanilla Resource.rpk as the one member of Resource.zip.001...; None elsewhere."""
+    parts = sorted(game.glob('Resource.zip.0*'))
+    if not parts:
+        return None
+    joined = into / 'vanilla-resource.zip'
+    with joined.open('wb') as out:
+        for part in parts:
+            out.write(part.read_bytes())
+    with zipfile.ZipFile(joined) as archive:
+        (into / 'Resource.rpk').write_bytes(archive.read(archive.namelist()[0]))
+    joined.unlink()
+    return into / 'Resource.rpk'
 
 
 def run(*args, env=None):
@@ -49,6 +66,13 @@ def main() -> int:
     inputs.mkdir()
     for member in INPUT_MEMBERS:
         (inputs / member).write_bytes(rpk.read(args.game / 'Resource.rpk', member))
+    vanilla = vanilla_resource(args.game, stage)
+    if vanilla:
+        layout = inputs / 'layouts' / 'vanilla'
+        layout.mkdir(parents=True)
+        for member in ('exanima01.rfc', 'exanima03.rfc'):
+            (layout / member).write_bytes(rpk.read(vanilla, member))
+        vanilla.unlink()  # about 160 MB; the staging folder is kept for inspection
     run(ROOT / 'assets.py', '--inputs', inputs, '--out', stage / 'full', env=env)
     built = stage / 'full' / 'mods' / MOD_ID
     run(delta_tool, '--game', args.game, '--full', built / 'assets/packages/Resource',
