@@ -1,0 +1,16 @@
+[plugin]
+name = "Grindstone"
+version = "0.1.0"
+
+[script]
+runtime = "com.necrosis.script-runtime"
+entry = "scripts/main.lua"
+requires = ["events.lifecycle", "items.stats"]
+optional = ["events.gear_use", "items.condition", "inventory.read", "events.combat", "items.wear", "storage.save", "timers", "events.item_use", "items.read", "ui.notify", "world.read", "world.time", "weapons.unequip", "world.drop", "ui.settings", "ui.sound", "inventory.transfer", "world.devices", "levels.serve"]
+
+[script.modules]
+config = "scripts/config.lua"
+wear = "scripts/wear.lua"
+options = "scripts/options.lua"
+common = "scripts/common.lua"
+placements = "scripts/placements.lua"
